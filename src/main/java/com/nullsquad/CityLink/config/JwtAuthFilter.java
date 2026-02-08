@@ -1,7 +1,7 @@
 package com.nullsquad.CityLink.config;
 
-import com.nullsquad.CityLink.security.JwtTokenProvider;
 import com.nullsquad.CityLink.security.CustomUserDetailsService;
+import com.nullsquad.CityLink.security.JwtUtils;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,20 +20,47 @@ import java.io.IOException;
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     @Autowired
-    private JwtTokenProvider tokenProvider;
+    private JwtUtils jwtUtils;
 
     @Autowired
     private CustomUserDetailsService userDetailsService;
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        return path.startsWith("/api/auth/");
+    }
+
+    @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Get JWT token from request header
-        // Validate token
-        // Load user associated with token
-        // Set authentication in context
+        final String authHeader = request.getHeader("Authorization");
+        final String jwt;
+        final String userEmail;
 
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
+        jwt = authHeader.substring(7);
+        userEmail = jwtUtils.extractUsername(jwt);
+
+        if (userEmail != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+            UserDetails userDetails = this.userDetailsService.loadUserByUsername(userEmail);
+            if (jwtUtils.validateToken(jwt, userDetails)) {
+                UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
+                        userDetails,
+                        null,
+                        userDetails.getAuthorities()
+                );
+                authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                SecurityContextHolder.getContext().setAuthentication(authToken);
+            }
+        }
         filterChain.doFilter(request, response);
     }
 }
+
+

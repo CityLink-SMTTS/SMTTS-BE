@@ -1,5 +1,6 @@
 package com.nullsquad.CityLink.controller;
 
+import com.nullsquad.CityLink.dto.AuthResponse;
 import com.nullsquad.CityLink.dto.LoginRequest;
 import com.nullsquad.CityLink.dto.SignupRequest;
 import com.nullsquad.CityLink.service.AuthService;
@@ -14,14 +15,14 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
-    @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest loginRequest) {
-        return ResponseEntity.ok(authService.login(loginRequest));
+    @PostMapping("/register")
+    public ResponseEntity<AuthResponse> register(@RequestBody SignupRequest request) {
+        return ResponseEntity.ok(authService.register(request));
     }
 
-    @PostMapping("/signup")
-    public ResponseEntity<?> signup(@RequestBody SignupRequest signupRequest) {
-        authService.signup(signupRequest);
-        return ResponseEntity.ok("User registered successfully");
+    @PostMapping("/login")
+    public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        return ResponseEntity.ok(authService.login(request));
     }
 }
+
